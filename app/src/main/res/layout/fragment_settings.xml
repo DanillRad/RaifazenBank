@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/layout_settings"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="24dp"
+    tools:context=".ui.settings.SettingsFragment">
+
+    <!-- Заголовок настроек -->
+    <TextView
+        android:id="@+id/text_settings_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Налаштування"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Подзаголовок настроек -->
+    <TextView
+        android:id="@+id/text_settings_subtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Місце для налаштувань мобільного додатку"
+        android:textSize="16sp"
+        android:textColor="@android:color/darker_gray"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/text_settings_title"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Метка для выбора языка -->
+    <TextView
+        android:id="@+id/select_language_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Оберіть мову"
+        android:textSize="16sp"
+        android:layout_marginTop="32dp"
+        app:layout_constraintTop_toBottomOf="@id/text_settings_subtitle"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Spinner для выбора языка -->
+    <Spinner
+        android:id="@+id/language_spinner"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:entries="@array/language_options"
+        app:layout_constraintTop_toBottomOf="@id/select_language_label"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:minHeight="48dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

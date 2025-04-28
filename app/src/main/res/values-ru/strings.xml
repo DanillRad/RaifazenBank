@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">RaiffeisenBank</string>
+    <string name="title_home">Главная</string>
+    <string name="title_dashboard">Мои заявки</string>
+    <string name="title_notifications">Уведомления</string>
+    <string name="title_settings">Настройки</string>
+    <string name="select_language">Выберите язык</string>
+</resources>
