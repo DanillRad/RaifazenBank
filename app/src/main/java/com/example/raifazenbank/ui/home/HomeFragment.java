@@ -1,11 +1,14 @@
 package com.example.raifazenbank.ui.home;
 
 import android.app.Activity;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -22,6 +25,8 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
@@ -35,7 +40,8 @@ public class HomeFragment extends Fragment {
 
     private static final String TAG = "WebViewDebug";
     private static final String URL_TO_LOAD = Config.URL_TO_LOAD;
-    private static final long CHECK_INTERVAL_MS = 3 * 60 * 1000;
+    private static final long CHECK_INTERVAL_MS = 5 * 60 * 1000;
+    private static final String CHANNEL_ID = "notif_channel";
 
     private FragmentHomeBinding binding;
     private WebView webView;
@@ -86,12 +92,13 @@ public class HomeFragment extends Fragment {
                 }
         );
 
-        // Используем WebView из XML или из ViewModel
-        webView = binding.webView;  // Получаем WebView из XML
-        webViewViewModel.webView = webView;  // Сохраняем WebView в ViewModel
+        webView = binding.webView;
+        webViewViewModel.webView = webView;
 
-        setupWebView();  // Настраиваем WebView
-        webView.loadUrl(URL_TO_LOAD);  // Загружаем URL
+        setupWebView();
+        webView.loadUrl(URL_TO_LOAD);
+
+        createNotificationChannel();
 
         return rootView;
     }
@@ -129,7 +136,18 @@ public class HomeFragment extends Fragment {
                             if (value != null && !value.equals("null")) {
                                 String json = value.replaceAll("^\"|\"$", "").replace("\\\"", "\"");
                                 compareAndNotify(json);
-                                notificationsViewModel.setNotifications(json);
+                                //notificationsViewModel.setNotifications(json);
+                                notificationsViewModel.setNotifications(requireContext(), json);
+
+
+                                // Добавим вывод сообщения о уведомлениях
+                                SharedPreferences prefs = requireActivity().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+                                boolean alreadyNotified = prefs.getBoolean("alreadyNotified", false);
+                                if (!alreadyNotified) {
+                                    showNotification("Отримані повідомлення", "Ви отримали нові повідомлення");
+                                    prefs.edit().putBoolean("alreadyNotified", true).apply();
+                                }
+
                             } else {
                                 Log.d(TAG, "sessionStorage.notifications пуст или null, повторим позже");
                             }
@@ -158,6 +176,48 @@ public class HomeFragment extends Fragment {
                 return true;
             }
         });
+    }
+
+    private void showNotification(String title, String message) {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(requireContext(), CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_notifications_black_24dp)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true);
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(requireContext());
+        if (notificationManager.areNotificationsEnabled()) {
+            notificationManager.notify(1, builder.build());
+        } else {
+            Log.e(TAG, "Уведомления отключены пользователем");
+        }    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "Уведомления";
+            String description = "Канал для уведомлений о новых данных";
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            NotificationManager notificationManager = requireContext().getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        SharedPreferences prefs = requireActivity().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+        boolean shouldRefresh = prefs.getBoolean("refreshWebViewAfterRecreate", false);
+
+        if (shouldRefresh) {
+            refreshWebView();
+            prefs.edit().putBoolean("refreshWebViewAfterRecreate", false).apply();
+        }
     }
 
     private void requestFilePermissions() {

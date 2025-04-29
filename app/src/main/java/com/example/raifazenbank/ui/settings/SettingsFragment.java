@@ -3,6 +3,7 @@ package com.example.raifazenbank.ui.settings;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -53,7 +54,9 @@ public class SettingsFragment extends Fragment {
                     // Сохраняем выбранный язык
                     saveLanguage(languageCode);
 
-                    // Перезагружаем приложение
+                    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+                    prefs.edit().putBoolean("refreshWebViewAfterRecreate", true).apply();
+
                     getActivity().recreate();
 
                     isUserInteraction = false;
