@@ -1,8 +1,12 @@
-<resources>
-    <string name="app_name">RaiffeisenBank</string>
+<resources xmlns:tools="http://schemas.android.com/tools">
+<string name="app_name">RaiffeisenBank</string>
     <string name="title_home">Home</string>
     <string name="title_dashboard">My Requests</string>
     <string name="title_notifications">Notifications</string>
     <string name="title_settings">Settings</string>
     <string name="select_language">Select Language</string>
+    <string name="settings_Settings" tools:ignore="ExtraTranslation">Settings</string>
+    <string name="settings_text" tools:ignore="ExtraTranslation">Place for mobile app settings</string>
+    <string name="choose_language" tools:ignore="ExtraTranslation">Choose a language</string>
+
 </resources>

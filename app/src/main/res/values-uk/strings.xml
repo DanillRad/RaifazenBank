@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">RaiffeisenBank</string>
     <string name="title_home">Головна</string>
     <string name="title_dashboard">Мої заявки</string>
     <string name="title_notifications">Повідомлення</string>
     <string name="title_settings">Налаштування</string>
     <string name="select_language">Оберіть мову</string>
+    <string name="settings_Settings" tools:ignore="ExtraTranslation">Налаштування</string>
+    <string name="settings_text" tools:ignore="ExtraTranslation">Місце для налаштувань мобільного додатку</string>
+    <string name="choose_language" tools:ignore="ExtraTranslation">Оберіть мову</string>
 </resources>
