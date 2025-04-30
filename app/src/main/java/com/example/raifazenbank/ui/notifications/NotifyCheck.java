@@ -31,7 +31,7 @@ public class NotifyCheck {
 
         // Создаём само уведомление
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_notifications_black_24dp) // Добавь иконку в res/drawable
+                .setSmallIcon(R.drawable.ic_notifications_black_24dp)
                 .setContentTitle("Отримано нове повідомлення")
                 .setContentText(message)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(message))

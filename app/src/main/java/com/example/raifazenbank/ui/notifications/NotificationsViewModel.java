@@ -15,8 +15,6 @@ import java.util.List;
 import android.content.Context;
 import com.example.raifazenbank.ui.notifications.NotifyCheck;
 
-
-
 public class NotificationsViewModel extends ViewModel {
 
     private final MutableLiveData<List<String>> notifications;

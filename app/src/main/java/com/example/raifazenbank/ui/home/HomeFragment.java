@@ -135,18 +135,26 @@ public class HomeFragment extends Fragment {
 
                             if (value != null && !value.equals("null")) {
                                 String json = value.replaceAll("^\"|\"$", "").replace("\\\"", "\"");
-                                compareAndNotify(json);
-                                //notificationsViewModel.setNotifications(json);
-                                notificationsViewModel.setNotifications(requireContext(), json);
 
-
-                                // Добавим вывод сообщения о уведомлениях
                                 SharedPreferences prefs = requireActivity().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
-                                boolean alreadyNotified = prefs.getBoolean("alreadyNotified", false);
-                                if (!alreadyNotified) {
+                                String previousJson = prefs.getString("prevNotifications", "");
+
+                                boolean wasEmptyBefore = previousJson.isEmpty() || previousJson.equals("[]");
+                                boolean isNowFilled = !json.isEmpty() && !json.equals("[]");
+
+                                Log.d("MyApp", "wasEmptyBefore: " + wasEmptyBefore + ", isNowFilled: " + isNowFilled);
+
+                                // Покажем уведомление, если раньше было пусто, а теперь — нет
+                                if (wasEmptyBefore && isNowFilled) {
+                                    Log.d("MyApp", "Показываем уведомление, появились новые сообщения после пустоты");
                                     showNotification("Отримані повідомлення", "Ви отримали нові повідомлення");
-                                    prefs.edit().putBoolean("alreadyNotified", true).apply();
                                 }
+
+                                // Сохраняем текущие как предыдущие для следующей проверки
+                                prefs.edit().putString("prevNotifications", json).apply();
+
+                                notificationsViewModel.setNotifications(requireContext(), json);
+                                compareAndNotify(json); // если нужно
 
                             } else {
                                 Log.d(TAG, "sessionStorage.notifications пуст или null, повторим позже");
@@ -154,6 +162,7 @@ public class HomeFragment extends Fragment {
 
                             webView.postDelayed(this, CHECK_INTERVAL_MS);
                         });
+
                     }
                 };
                 webView.postDelayed(checkNotificationsRunnable, 50000);
