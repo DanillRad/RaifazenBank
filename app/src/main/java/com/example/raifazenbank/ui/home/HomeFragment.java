@@ -10,6 +10,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -36,6 +37,10 @@ import com.example.raifazenbank.Config;
 import com.example.raifazenbank.databinding.FragmentHomeBinding;
 import com.example.raifazenbank.ui.notifications.NotificationsViewModel;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
 public class HomeFragment extends Fragment {
 
     private static final String TAG = "WebViewDebug";
@@ -61,6 +66,8 @@ public class HomeFragment extends Fragment {
             android.Manifest.permission.READ_EXTERNAL_STORAGE
     };
 
+    private File logFile;
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -72,6 +79,9 @@ public class HomeFragment extends Fragment {
 
         notificationsViewModel = new ViewModelProvider(requireActivity()).get(NotificationsViewModel.class);
         webViewViewModel = new ViewModelProvider(requireActivity()).get(WebViewViewModel.class);
+
+        createLogFile();
+        logToFile("Приложение запущено");
 
         requestFilePermissions();
 
@@ -117,8 +127,8 @@ public class HomeFragment extends Fragment {
                 intent.setData(Uri.parse(url));
                 startActivity(intent);
             } catch (Exception e) {
+                logToFile("Ошибка при открытии ссылки: " + e.getMessage());
                 Toast.makeText(getContext(), "Невозможно открыть ссылку", Toast.LENGTH_SHORT).show();
-                Log.e(TAG, "Ошибка при открытии ссылки: " + e.getMessage());
             }
         });
 
@@ -131,7 +141,7 @@ public class HomeFragment extends Fragment {
                     @Override
                     public void run() {
                         view.evaluateJavascript("sessionStorage.getItem('notifications');", value -> {
-                            Log.d(TAG, "sessionStorage.notifications: " + value);
+                            logToFile("sessionStorage.notifications: " + value);
 
                             if (value != null && !value.equals("null")) {
                                 String json = value.replaceAll("^\"|\"$", "").replace("\\\"", "\"");
@@ -142,22 +152,19 @@ public class HomeFragment extends Fragment {
                                 boolean wasEmptyBefore = previousJson.isEmpty() || previousJson.equals("[]");
                                 boolean isNowFilled = !json.isEmpty() && !json.equals("[]");
 
-                                Log.d("MyApp", "wasEmptyBefore: " + wasEmptyBefore + ", isNowFilled: " + isNowFilled);
+                                logToFile("wasEmptyBefore: " + wasEmptyBefore + ", isNowFilled: " + isNowFilled);
 
-                                // Покажем уведомление, если раньше было пусто, а теперь — нет
                                 if (wasEmptyBefore && isNowFilled) {
-                                    Log.d("MyApp", "Показываем уведомление, появились новые сообщения после пустоты");
+                                    logToFile("Появились новые сообщения — показываем уведомление");
                                     showNotification("Отримані повідомлення", "Ви отримали нові повідомлення");
                                 }
 
-                                // Сохраняем текущие как предыдущие для следующей проверки
                                 prefs.edit().putString("prevNotifications", json).apply();
-
                                 notificationsViewModel.setNotifications(requireContext(), json);
-                                compareAndNotify(json); // если нужно
+                                compareAndNotify(json);
 
                             } else {
-                                Log.d(TAG, "sessionStorage.notifications пуст или null, повторим позже");
+                                logToFile("sessionStorage.notifications пуст или null, повторим позже");
                             }
 
                             webView.postDelayed(this, CHECK_INTERVAL_MS);
@@ -179,6 +186,7 @@ public class HomeFragment extends Fragment {
                     fileChooserLauncher.launch(intent);
                 } catch (Exception e) {
                     HomeFragment.this.filePathCallback = null;
+                    logToFile("Ошибка при открытии выбора файла: " + e.getMessage());
                     Toast.makeText(getContext(), "Невозможно открыть выбор файла", Toast.LENGTH_SHORT).show();
                     return false;
                 }
@@ -199,8 +207,9 @@ public class HomeFragment extends Fragment {
         if (notificationManager.areNotificationsEnabled()) {
             notificationManager.notify(1, builder.build());
         } else {
-            Log.e(TAG, "Уведомления отключены пользователем");
-        }    }
+            logToFile("Уведомления отключены пользователем");
+        }
+    }
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -226,6 +235,7 @@ public class HomeFragment extends Fragment {
         if (shouldRefresh) {
             refreshWebView();
             prefs.edit().putBoolean("refreshWebViewAfterRecreate", false).apply();
+            logToFile("WebView перезагружен после возврата");
         }
     }
 
@@ -243,11 +253,11 @@ public class HomeFragment extends Fragment {
 
         if (oldJson == null || !oldJson.equals(newJson)) {
             if (!isNotificationDisplayed) {
-                Log.d(TAG, "Найдено новое уведомление");
+                logToFile("Найдено новое уведомление");
                 isNotificationDisplayed = true;
             }
         } else {
-            Log.d(TAG, "Уведомления не изменились");
+            logToFile("Уведомления не изменились");
         }
 
         prefs.edit().putString("notifications", newJson).apply();
@@ -262,4 +272,36 @@ public class HomeFragment extends Fragment {
             webView.reload();
         }
     }
+
+    private void createLogFile() {
+        File downloadsDir = requireContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+        if (downloadsDir != null) {
+            logFile = new File(downloadsDir, "app_log.txt");
+
+            if (!logFile.exists()) {
+                try {
+                    boolean created = logFile.createNewFile();
+                    if (created) {
+                        logToFile("Лог-файл создан в Downloads: " + logFile.getAbsolutePath());
+                    }
+                } catch (IOException e) {
+                    Log.e(TAG, "Не удалось создать лог-файл: " + e.getMessage());
+                }
+            }
+        }
+    }
+
+    private void logToFile(String msg) {
+        if (logFile == null) return;
+
+        try (FileWriter writer = new FileWriter(logFile, true)) {
+            String timestamp = new java.text.SimpleDateFormat("HH:mm:ss dd-MM-yyyy").format(new java.util.Date());
+            String methodName = Thread.currentThread().getStackTrace()[3].getMethodName();
+            String logEntry = String.format("[%s] [%s] %s: %s", timestamp, TAG, methodName, msg);
+            writer.write(logEntry + "\n");
+        } catch (IOException e) {
+            Log.e(TAG, "Ошибка записи в лог-файл: " + e.getMessage());
+        }
+    }
+
 }
