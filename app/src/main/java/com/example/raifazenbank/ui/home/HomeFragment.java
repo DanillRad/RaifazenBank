@@ -66,11 +66,17 @@ public class HomeFragment extends Fragment {
             android.Manifest.permission.READ_EXTERNAL_STORAGE
     };
 
+    private static final int NOTIF_PERMISSION_REQUEST_CODE = 456;
+
     private File logFile;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+        // ОЧИСТКА SharedPreferences
+        SharedPreferences prefs = requireActivity().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+        prefs.edit().clear().apply(); // или .commit(), если нужно синхронно
+
 
         if (rootView != null) return rootView;
 
@@ -84,6 +90,7 @@ public class HomeFragment extends Fragment {
         logToFile("Приложение запущено");
 
         requestFilePermissions();
+        requestNotificationPermission();
 
         fileChooserLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -113,6 +120,21 @@ public class HomeFragment extends Fragment {
         return rootView;
     }
 
+    // Запрашивает разрешение на уведомления (Android 13+)
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(requireContext(),
+                    android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+
+                ActivityCompat.requestPermissions(
+                        requireActivity(),
+                        new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
+                        NOTIF_PERMISSION_REQUEST_CODE
+                );
+            }
+        }
+    }
+
     private void setupWebView() {
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
@@ -132,6 +154,7 @@ public class HomeFragment extends Fragment {
             }
         });
 
+        // Обработка загрузки страницы: периодическая проверка sessionStorage и вызов уведомлений при новых данных
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) {
@@ -148,9 +171,12 @@ public class HomeFragment extends Fragment {
 
                                 SharedPreferences prefs = requireActivity().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
                                 String previousJson = prefs.getString("prevNotifications", "");
+                                Log.d("NotifyDebug", "prevNotifications (из SharedPreferences): " + previousJson);
 
                                 boolean wasEmptyBefore = previousJson.isEmpty() || previousJson.equals("[]");
                                 boolean isNowFilled = !json.isEmpty() && !json.equals("[]");
+                                Log.d("NotifyDebug", "wasEmptyBefore (из SharedPreferences): " + wasEmptyBefore);
+                                Log.d("NotifyDebug", "isNowFilled (из SharedPreferences): " + isNowFilled);
 
                                 logToFile("wasEmptyBefore: " + wasEmptyBefore + ", isNowFilled: " + isNowFilled);
 
@@ -169,7 +195,24 @@ public class HomeFragment extends Fragment {
 
                             webView.postDelayed(this, CHECK_INTERVAL_MS);
                         });
+                        /* Старт
+                        view.evaluateJavascript("sessionStorage.getItem('accessToken455862c7ea798166d9a3123cd0f7544e');", tokenValue -> {
+                            if (tokenValue != null && !tokenValue.equals("null")) {
+                                // Очистка кавычек и экранирования
+                                String token = tokenValue.replaceAll("^\"|\"$", "");
 
+                                logToFile("Получен токен: " + token);
+                                Log.d("NotifyToken", "token (из SharedPreferences): " + tokenValue);
+
+
+                                // Сохраняем токен в SharedPreferences
+                                SharedPreferences prefs = requireActivity().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+                                prefs.edit().putString("sessionToken", token).apply();
+                            } else {
+                                logToFile("Токен не найден в sessionStorage");
+                            }
+                        });
+                         Завершено*/
                     }
                 };
                 webView.postDelayed(checkNotificationsRunnable, 50000);
@@ -195,6 +238,7 @@ public class HomeFragment extends Fragment {
         });
     }
 
+    // Показываем push-уведомление с заголовком
     private void showNotification(String title, String message) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(requireContext(), CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_notifications_black_24dp)
@@ -210,6 +254,7 @@ public class HomeFragment extends Fragment {
             logToFile("Уведомления отключены пользователем");
         }
     }
+
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -247,6 +292,7 @@ public class HomeFragment extends Fragment {
         }
     }
 
+    // Сравнивает старый и новый список уведомлений. Если появились новые — логирует и выставляет флаг
     private void compareAndNotify(String newJson) {
         SharedPreferences prefs = requireActivity().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
         String oldJson = prefs.getString("notifications", "");
@@ -263,6 +309,7 @@ public class HomeFragment extends Fragment {
         prefs.edit().putString("notifications", newJson).apply();
     }
 
+    // Сбрасывает флаг, отвечающий за то, что уведомление уже показано(новое получение данных)
     public void resetNotificationFlag() {
         isNotificationDisplayed = false;
     }
@@ -273,6 +320,7 @@ public class HomeFragment extends Fragment {
         }
     }
 
+    // Создает лог-файл в папке загрузок, если он ещё не существует
     private void createLogFile() {
         File downloadsDir = requireContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
         if (downloadsDir != null) {
@@ -291,6 +339,7 @@ public class HomeFragment extends Fragment {
         }
     }
 
+    // Записывает текст в лог-файл с текущим временем и именем метода
     private void logToFile(String msg) {
         if (logFile == null) return;
 
@@ -303,5 +352,4 @@ public class HomeFragment extends Fragment {
             Log.e(TAG, "Ошибка записи в лог-файл: " + e.getMessage());
         }
     }
-
 }

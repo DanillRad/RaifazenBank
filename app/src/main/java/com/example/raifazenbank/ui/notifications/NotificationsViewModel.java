@@ -1,4 +1,5 @@
 package com.example.raifazenbank.ui.notifications;
+// import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -87,7 +88,7 @@ public class NotificationsViewModel extends ViewModel {
 
     // Метод для извлечения textTile из строки уведомления
     private String getTextTileFromNotification(String notification) {
-        // Разделяем строку уведомления на части, предполагая, что она в формате:
+        // Разделяем строку уведомления на части, что она в формате:
         // "Отримувач: <userId>\n<textTile>\n<textMsg>\nДата: <dateSend>"
         String[] parts = notification.split("\n");
         if (parts.length >= 2) {
